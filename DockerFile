@@ -1,0 +1,8 @@
+FROM python:latest
+LABEL Mainttainer='jamsyd'
+
+WORDIR /usr/app/src
+
+COPY train_arma.py ./
+
+CMD ["python", "./train_arma.py"]
