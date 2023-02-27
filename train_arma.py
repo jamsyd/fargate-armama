@@ -1,17 +1,15 @@
 def trainModel(ticker,payload):
 
-    import os
-    import sys
-
-
     import numpy as np
     import pandas as pd
 
     import yfinance as yf
     import awswrangler as wr
 
-    from datetime import datetime
+    from datetime import datetime, date
     from statsmodels.tsa.arima.model import ARIMA
+
+    today = date.today()
 
     cacheForecasts = {
 
@@ -49,9 +47,9 @@ def trainModel(ticker,payload):
     ma_diff = dataframe[payload['column']].rolling(50).mean().diff(1).reset_index()[payload['column']].iloc[-1]
     po_diff = (rescaled_fcast.iloc[-1] - dataframe[payload['column']].iloc[-1])
 
+    # scores
     perc_return = 100*po_diff/dataframe[payload['column']].iloc[-payload['forecastHorizon']]
     ret_score   = np.abs(po_diff/np.std(np.exp(np.log(dataframe[payload['column']]).diff(1))))
-
 
     if (po_diff) > 0 and (ma_diff > 0):
         for i in range(1,1+payload['forecastHorizon']):
@@ -71,7 +69,5 @@ def trainModel(ticker,payload):
         cacheForecasts['percDiff'].append(perc_return)
         cacheForecasts['retScore'].append(ret_score)
 
-    wr.s3.to_csv(
-        df=pd.DataFrame(cacheForecasts),
-        path=f's3://jamsyd-arma-ma/forecasts/{ticker}.csv',
-    )
+    wr.s3.to_csv(df = pd.DataFrame(cacheForecasts),\
+                path = f's3://jamsyd-arma-ma/forecasts/{today.strftime("%Y/%m/%d")}/{ticker}.csv')
